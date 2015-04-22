@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>PID</id>
+    <version>0.0.0</version>
+    <authors>Gordon Durgha</authors>
+    <owners>Gordon Durgha</owners>
+    <licenseUrl>http://gordondurgha.com</licenseUrl>
+    <projectUrl>http://gordondurgha.com</projectUrl>
+    <iconUrl>http://gordondurgha.com</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>SampleNugetLib</description>
+    <releaseNotes>Initial release of SampleNugetLib</releaseNotes>
+    <copyright>Copyright 2015 Gordon Durgha</copyright>
+    <tags>SampleNugetLib</tags>
+    <dependencies>
+      <dependency id="Newtonsoft.Json" version="6.0.8" />
+    </dependencies>
+  </metadata>
+    <files>
+        <file src="SampleNugetLib.dll" target="lib\net45\SampleNugetLib.dll" />
+    </files>
+</package>

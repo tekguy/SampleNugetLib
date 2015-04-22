@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="lib\msbuild\MSBuild.Community.Tasks.Targets" />
+  <Import Project="lib\msbuild\MSBuild.Deployment.Tasks.Targets" />
+    
+  <PropertyGroup>
+    <Root>$(MSBuildStartupDirectory)</Root>
+    <nugetexe>$(Root)\_build\lib\nuget\nuget.exe</nugetexe>
+    <ProjectBuildMode></ProjectBuildMode>
+    <NuGetPackageVersion></NuGetPackageVersion>
+    <ProjectName></ProjectName>
+    <SolutionName></SolutionName>
+    <VisualStudioVersion>12.0</VisualStudioVersion>
+    <NugetApiKey></NugetApiKey>
+    <NugetServer></NugetServer>
+    <NugetPackageName></NugetPackageName>
+  </PropertyGroup>
+
+  <Target Name="Clean">
+    <!-- Clean up -->
+    <ItemGroup>
+      <FilesToDelete Include="$(Root)\_build\Published\**\*.*" />
+      <FilesToDelete Include="$(Root)\_build\Artifacts\**\*.*" />
+    </ItemGroup>
+    <Delete Files="@(FilesToDelete)" ContinueOnError="true" />
+
+    <!-- Ensure directories exists -->
+    <MakeDir Directories="$(MSBuildProjectDirectory)\Artifacts" Condition="!Exists('$(MSBuildProjectDirectory)\Artifacts')" />
+    <MakeDir Directories="$(MSBuildProjectDirectory)\Published" Condition="!Exists('$(MSBuildProjectDirectory)\Published')" />
+  </Target>
+
+  <Target Name="DebugInfo" DependsOnTargets="Clean" AfterTargets="Clean">
+    
+    <!-- Diagnostics -->
+    <Message Text="Diagnostics:"/>
+    <Message Text="Project Build Mode:    $(ProjectBuildMode)" />
+    <Message Text="Solution Name:    $(SolutionName)" />
+    <Message Text="Project Name:    $(ProjectName)" />
+    <Message Text="Build dir:       $(MSBuildProjectDirectory)" />
+    <Message Text="Project root:    $(Root)" />
+    <Message Text="Nuget Api Key:   $(NugetApiKey)" />
+    <Message Text="Nuget Server Url:   $(NugetServer)" />
+    <Message Text="Nuget Package Name:   $(NugetPackageName)" />
+    <Message Text="Nuget Package Version:   $(NuGetPackageVersion)" />
+  </Target>
+
+  <Target Name="BuildSolution" DependsOnTargets="DebugInfo" AfterTargets="DebugInfo">
+    <!-- Restore Nuget Packages -->
+    <Message Text="Restoring nuget..."/>
+    <Exec Command="$(nugetexe) restore $(Root)\$(SolutionName)" />
+
+    <!-- Compile -->
+    <ItemGroup>
+      <ProjectToBuild Include="$(Root)\$(SolutionName)" />
+    </ItemGroup>
+    <MSBuild Projects="@(ProjectToBuild)" Targets="Build" Properties="VisualStudioVersion=$(VisualStudioVersion);Configuration=$(ProjectBuildMode);Platform=Any CPU;OutputPath=$(Root)\_build\Published">
+      <Output TaskParameter="TargetOutputs" ItemName="AssembliesBuiltByChildProjects" />
+    </MSBuild>
+  </Target>
+  <Target Name="Build" DependsOnTargets="BuildSolution" AfterTargets="BuildSolution">
+
+    <!-- Add NuGet files-->    
+    <ItemGroup>
+      <NuSpecSourceFile Include="$(Root)\_build\BaseNugetSpec.nuspec" />
+    </ItemGroup>
+    <ItemGroup>
+      <NuSpecDestinationFiles Include="$(Root)\_build\Published\$(NugetPackageName).nuspec" />
+    </ItemGroup>
+    <Copy SourceFiles="@(NuSpecSourceFile)" DestinationFiles="@(NuSpecDestinationFiles)"/>
+
+    <!-- Replace version in nuspec file -->
+    <FileUpdate Files="$(Root)\_build\Published\$(NugetPackageName).nuspec" Regex="0.0.0" ReplacementText="$(NuGetPackageVersion)" />
+    <FileUpdate Files="$(Root)\_build\Published\$(NugetPackageName).nuspec" Regex="PID" ReplacementText="$(NugetPackageName)" />
+
+    <!-- Run nuget pack -->
+    <Exec Command="$(nugetexe) pack $(Root)\_build\Published\$(NugetPackageName).nuspec -o $(Root)\_build\Artifacts" />
+
+    <!-- Run nuget push -->
+    <Exec Command="$(nugetexe) push $(Root)\_build\Artifacts\$(NugetPackageName).$(NuGetPackageVersion).nupkg $(NugetApiKey) -Source $(NugetServer)" />
+  </Target>
+</Project>
